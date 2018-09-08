@@ -132,6 +132,8 @@ namespace PeerNode
         // Disposes the instance of SocketClient.
         public void Dispose()
         {
+            clientSocket.Shutdown(SocketShutdown.Both);
+
             clientSocket.Close();
         }
     }

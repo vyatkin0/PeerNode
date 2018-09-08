@@ -30,6 +30,10 @@ namespace PeerNode
             StartAccept(null);
         }
 
+        public void Close()
+        {
+            listenSocket.Close();
+        }
 
         // Begins an operation to accept a connection request from the client 
         //
@@ -205,7 +209,7 @@ namespace PeerNode
         {
             try
             {
-                s.Shutdown(SocketShutdown.Send);
+                s.Shutdown(SocketShutdown.Both);
             }
             // throws if client process has already closed
             catch (Exception) { }

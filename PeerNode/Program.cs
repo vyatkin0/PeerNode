@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Threading;
 
 /// <summary>
 /// Simple peer node
@@ -128,7 +129,7 @@ namespace PeerNode
                     if (0 == AppConfig.Node.Port) throw (new Exception("Mail 'user' is not specified in configuration file"));
 
                     //if (null == AppConfig.prevNode) throw (new Exception("Previous node is not specified in configuration file"));
-                    if (null == AppConfig.network) throw (new Exception("Nework is not specified in configuration file"));
+                    if (null == AppConfig.network) throw (new Exception("Network is not specified in configuration file"));
                 }
             }
             catch (Exception e)
@@ -151,12 +152,12 @@ namespace PeerNode
 
             IPEndPoint endpoint = new IPEndPoint(ip, AppConfig.Node.Port);
 
-            //Start server to receive transctions and blocks
+            //Start server to receive transactions and blocks
             s.Start(endpoint);
 
             Console.WriteLine("Server started!");
             Console.WriteLine("Press any key to start connections to peers.");
-            Console.ReadKey();
+            Console.ReadKey(true);
 
             //Initialize connections to remote peers to send transactions and blocks
             foreach (PeerNode p in AppConfig.network)
@@ -168,23 +169,41 @@ namespace PeerNode
 
             Console.WriteLine("Press (1) to send a transaction, (2) to send a block, (Esc) key to stop...");
 
-            ConsoleKey key;
-            while ((key = Console.ReadKey().Key) != ConsoleKey.Escape)
-            {
-                switch (key)
-                {
-                    case ConsoleKey.D1:
-                        SendTransaction();
-                        break;
+            ConsoleKey key = Console.ReadKey(true).Key;
 
-                    case ConsoleKey.D2:
-                        SendTransactionBlock();
-                        break;
+            Timer t1 = null;
+            Timer t2 = null;
+
+            if (key == ConsoleKey.D3)
+            {
+                t1 = new Timer((o)=>SendTransaction(), null, 0, AppConfig.tranTimeout);
+                t2 = new Timer((o)=>SendTransactionBlock(), null, 1000, AppConfig.blockTimeout);
+            }
+            else
+            {
+                while (key != ConsoleKey.Escape)
+                {
+                    switch (key)
+                    {
+                        case ConsoleKey.D1:
+                            SendTransaction();
+                            break;
+
+                        case ConsoleKey.D2:
+                            SendTransactionBlock();
+                            break;
+                    }
+
+                    if (key != ConsoleKey.D3)
+                        key = Console.ReadKey().Key;
                 }
             }
 
             Console.WriteLine("Press any key to terminate the process...");
-            Console.ReadKey();
+            Console.ReadKey(true);
+
+            if (null != t1) t1.Dispose();
+            if (null != t2) t2.Dispose();
 
             //Dispose connections
             foreach (PeerNode p in AppConfig.network)
@@ -192,6 +211,8 @@ namespace PeerNode
                 if(null!=p.client)
                     p.client.Dispose();
             }
+
+            s.Close();
         }
 
         /// <summary>
@@ -242,7 +263,7 @@ namespace PeerNode
 
                 byte[] data = ms.ToArray();
                 string blockJson = Encoding.UTF8.GetString(data, 0, data.Length);
-                Console.WriteLine($"Created block of transactions: {PrettifyBlockOfTransactios(blockJson)}");
+                Console.WriteLine($"Created block of transactions: {PrettifyBlockOfTransactions(blockJson)}");
 
                 foreach (PeerNode np in AppConfig.network)
                 {
@@ -351,7 +372,7 @@ namespace PeerNode
                                 break;
                         }
                     }
-                    Console.WriteLine(PrettifyBlockOfTransactios(bodyJson));
+                    Console.WriteLine(PrettifyBlockOfTransactions(bodyJson));
                 }
 
                 offset = msgSize + 1;
@@ -360,7 +381,7 @@ namespace PeerNode
             return offset;
         }
 
-        static string PrettifyBlockOfTransactios(string jsonBlock)
+        static string PrettifyBlockOfTransactions(string jsonBlock)
         {
             return jsonBlock.Replace("},{", "},\r\n{").Replace(",\"transactions\":[{", ",\r\n\"transactions\":[\r\n{").Replace("}]}", "}\r\n]\r\n}");
         }
