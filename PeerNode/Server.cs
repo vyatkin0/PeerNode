@@ -127,7 +127,7 @@ namespace PeerNode
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
                 int totalBytesRead = e.Offset + e.BytesTransferred;
-                Console.WriteLine("The server has read a total of {0} bytes", totalBytesRead);
+                //Console.WriteLine("The server has read a total of {0} bytes", totalBytesRead);
 
                 //find end of message
                 byte[] buf = e.Buffer;
