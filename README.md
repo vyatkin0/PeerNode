@@ -1,5 +1,5 @@
 # PeerNode
-Example of a simple peer network client
+Example of a simple peer network client.
 Solution is based on .NET CORE 2.0.
 
 These are generic installation instructions.
