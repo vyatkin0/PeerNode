@@ -22,14 +22,14 @@ namespace PeerNode
         internal SocketClient(String hostName, Int32 port)
         {
             // Get host related information.
-            IPHostEntry host = Dns.GetHostEntry(hostName);
+            //IPHostEntry host = Dns.GetHostEntry(hostName);
 
             // Address of the host.
-            IPAddress[] addressList = host.AddressList;
+            //IPAddress[] addressList = host.AddressList;
 
             // Instantiates the endpoint and socket.
             hostEndPoint =
-              new IPEndPoint(addressList[addressList.Length - 1], port);
+              new IPEndPoint(IPAddress.Parse(hostName)/*addressList[addressList.Length - 1]*/, port);
             clientSocket = new Socket(hostEndPoint.AddressFamily,
                                SocketType.Stream, ProtocolType.Tcp);
         }

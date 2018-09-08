@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 /// <summary>
@@ -354,7 +355,8 @@ namespace PeerNode
 
                                     ReceivedTransactionBlock rt = new ReceivedTransactionBlock { transactionBlock = tb, timeStamp = DateTime.Now };
 
-                                    string fileName = tb.nodeId + "_" + tb.timeStamp.ToString().Replace(":", "") + ".txt";
+                                    string fileName = tb.nodeId + "_" + Regex.Replace(tb.timeStamp.ToString(), "[:\\/]", "") + ".json";
+
                                     using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write))
                                     {
                                         DataContractJsonSerializer rcvdBlockSerializer = new DataContractJsonSerializer(typeof(ReceivedTransactionBlock));
