@@ -1,7 +1,7 @@
 # PeerNode
 Example of a simple peer network client.
 
-Solution is based on .NET CORE 2.0.
+Solution is based on .NET CORE 2.1
 
 These are generic installation instructions.
 1. Download and install .NET CORE SDK 2.1;
