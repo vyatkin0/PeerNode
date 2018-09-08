@@ -5,7 +5,7 @@ Solution is based on .NET CORE 2.1
 
 These are generic installation instructions.
 1. Download and install .NET CORE SDK 2.1;
-2. Add application and network settings using appsettings.json
+2. Add application and network settings using appsettings.json;
 3. In the solution's folder execute following commands: "dotnet build", "dotnet run".
 
 Testing your network.
