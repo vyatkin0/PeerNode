@@ -175,29 +175,29 @@ namespace PeerNode
             Timer t1 = null;
             Timer t2 = null;
 
-            if (key == ConsoleKey.D3)
+            while (key != ConsoleKey.Escape)
             {
-                t1 = new Timer((o)=>SendTransaction(), null, 0, AppConfig.tranTimeout);
-                t2 = new Timer((o)=>SendTransactionBlock(), null, 1000, AppConfig.blockTimeout);
-            }
-            else
-            {
-                while (key != ConsoleKey.Escape)
+                switch (key)
                 {
-                    switch (key)
-                    {
-                        case ConsoleKey.D1:
-                            SendTransaction();
-                            break;
+                    case ConsoleKey.D1:
+                        SendTransaction();
+                        break;
 
-                        case ConsoleKey.D2:
-                            SendTransactionBlock();
-                            break;
-                    }
-
-                    if (key != ConsoleKey.D3)
-                        key = Console.ReadKey().Key;
+                    case ConsoleKey.D2:
+                        SendTransactionBlock();
+                        break;
+                    
+                    case ConsoleKey.D3:
+                        {
+                            t1 = new Timer((o)=>SendTransaction(), null, 0, AppConfig.tranTimeout);
+                            t2 = new Timer((o)=>SendTransactionBlock(), null, 1000, AppConfig.blockTimeout);
+                        }
+                        break;
                 }
+
+                if(key == ConsoleKey.D3) break;
+                
+                key = Console.ReadKey().Key;
             }
 
             Console.WriteLine("Press any key to terminate the process...");
