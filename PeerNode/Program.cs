@@ -196,8 +196,8 @@ namespace PeerNode
                 }
 
                 if(key == ConsoleKey.D3) break;
-                
-                key = Console.ReadKey().Key;
+
+                key = Console.ReadKey(true).Key;
             }
 
             Console.WriteLine("Press any key to terminate the process...");
