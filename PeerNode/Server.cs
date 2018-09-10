@@ -11,7 +11,7 @@ namespace PeerNode
         Socket listenSocket;            // the socket used to listen for incoming connection requests
 
         int m_numConnectedSockets;      // the total number of clients connected to the server 
-        const int maxMessageSize = 32768;
+        const int maxMessageSize = 16*1024*1024;
 
         // Starts the server such that it is listening for 
         // incoming connection requests.

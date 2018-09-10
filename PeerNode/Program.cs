@@ -109,6 +109,8 @@ namespace PeerNode
     {
         public static Config AppConfig;
         public static bool fStress = false;
+        public static int stressCount = 10000;
+        public static Stopwatch stopWatch;
 
         /// <summary>
         /// List of received transactions
@@ -123,7 +125,10 @@ namespace PeerNode
             fStress = args.Length>0;
 
             if(fStress)
-                Console.WriteLine("Stress test enabled.");
+            {
+                stressCount = int.Parse(args[0]);
+                Console.WriteLine($"Stress test enabled. Stress transactions count is {stressCount}");
+            }
 
             try
             {
@@ -232,15 +237,19 @@ namespace PeerNode
                     case ConsoleKey.D4:
                         if(fStress)
                         {
-                            Stopwatch stopWatch = Stopwatch.StartNew();
+                            stopWatch = Stopwatch.StartNew();
 
                             Transaction t = new Transaction { nodeId = AppConfig.Node.Id, seqNum = 0, timeStamp = DateTime.Now};
 
                             int i=0;
-                            for(; i<10000; i++)
-                                SendTransaction();
+                            for(; i<stressCount; i++)
+                            {
+                                if(i%1000==0)
+                                 Thread.Sleep(10);
 
-                            stopWatch.Stop();
+                                SendTransaction();
+                            }
+
                             TimeSpan timespan = stopWatch.Elapsed;
 
                             Console.WriteLine($"{i} transactions was sent successfully, elapsed time {stopWatch.ElapsedMilliseconds} ms");
@@ -258,6 +267,13 @@ namespace PeerNode
 
             Console.WriteLine("Press any key to terminate the process...");
             Console.ReadKey(true);
+
+            if(null!=stopWatch)
+            {
+                stopWatch.Stop();
+                TimeSpan timespan = stopWatch.Elapsed;
+                Console.WriteLine(timespan.TotalMilliseconds.ToString("0.0###"));
+            }
 
             if (null != t1) t1.Dispose();
             if (null != t2) t2.Dispose();
@@ -386,7 +402,7 @@ namespace PeerNode
 
                                         if(fStress)
                                         {
-                                            if(rt.transaction.seqNum==9999)
+                                            if((rt.transaction.seqNum+1)%10000==0)
                                                 SendTransactionBlock();
                                         }
                                         else
@@ -425,6 +441,9 @@ namespace PeerNode
                                         rcvdBlockSerializer.WriteObject(fs, rt);
                                         fs.SetLength(fs.Position);
                                     }
+
+                                    TimeSpan timespan = stopWatch.Elapsed;
+                                    Console.WriteLine($"Block of transactions was received and stored successfully, elapsed time {stopWatch.ElapsedMilliseconds} ms");
 
                                     if (null != AppConfig.prevNode && tb.nodeId == AppConfig.prevNode.Id)
                                     {
