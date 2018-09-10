@@ -125,9 +125,9 @@ namespace PeerNode
 
                     if (null == AppConfig.Node) throw (new Exception("Node is not specified in configuration file"));
 
-                    if (null == AppConfig.Node.Id) throw (new Exception("Mail 'user' is not specified in configuration file"));
-                    if (null == AppConfig.Node.Address) throw (new Exception("Mail 'password' is not specified in configuration file"));
-                    if (0 == AppConfig.Node.Port) throw (new Exception("Mail 'user' is not specified in configuration file"));
+                    if (null == AppConfig.Node.Id) throw (new Exception("Node Id is not specified in configuration file"));
+                    if (null == AppConfig.Node.Address) throw (new Exception("Node address is not specified in configuration file"));
+                    if (0 == AppConfig.Node.Port) throw (new Exception("Node port is not specified in configuration file"));
 
                     //if (null == AppConfig.prevNode) throw (new Exception("Previous node is not specified in configuration file"));
                     if (null == AppConfig.network) throw (new Exception("Network is not specified in configuration file"));
