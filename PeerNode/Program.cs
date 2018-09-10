@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -107,6 +108,7 @@ namespace PeerNode
     class Program
     {
         public static Config AppConfig;
+        public static bool fStress = false;
 
         /// <summary>
         /// List of received transactions
@@ -115,6 +117,14 @@ namespace PeerNode
 
         static void Main(string[] args)
         {
+            //foreach(string sa in args)
+            //    Console.WriteLine(sa);
+
+            fStress = args.Length>0;
+
+            if(fStress)
+                Console.WriteLine("Stress test enabled.");
+
             try
             {
                 var serializer = new DataContractJsonSerializer(typeof(Config));
@@ -139,6 +149,31 @@ namespace PeerNode
                 return;
             }
 
+/*
+            Stopwatch stopWatch = Stopwatch.StartNew();
+
+            Transaction t = new Transaction { nodeId = AppConfig.Node.Id, seqNum = AppConfig.Node.seqNum++, timeStamp = DateTime.Now};
+
+            for(int i=0; i<10000; i++)
+            {
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    DataContractJsonSerializer transactionSerializer = new DataContractJsonSerializer(typeof(Transaction));
+                    t.seqNum = i;
+                    transactionSerializer.WriteObject(ms, t);
+
+                    byte[] data = ms.ToArray();
+
+                    string tranJson = Encoding.UTF8.GetString(data, 0, data.Length);
+                }
+            }
+
+            stopWatch.Stop();
+            TimeSpan timespan = stopWatch.Elapsed;
+
+            //Console.WriteLine("Elapsed time {0} ms",stopWatch.ElapsedMilliseconds);
+            Console.WriteLine(timespan.TotalMilliseconds.ToString("0.0###"));
+*/
             Console.WriteLine($"Node started id={AppConfig.Node.Id} previous={AppConfig.prevNode?.Id}");
 
             Server s = new Server();
@@ -168,7 +203,7 @@ namespace PeerNode
                 p.client.Connect();
             }
 
-            Console.WriteLine("Press (1) to send a transaction, (2) to send a block, (Esc) key to stop...");
+            Console.WriteLine("Press (1) to send a transaction, (2) to send a block, (3) to start timers, (4) start stress test, (Esc) key to stop...");
 
             ConsoleKey key = Console.ReadKey(true).Key;
 
@@ -193,6 +228,27 @@ namespace PeerNode
                             t2 = new Timer((o)=>SendTransactionBlock(), null, 1000, AppConfig.blockTimeout);
                         }
                         break;
+
+                    case ConsoleKey.D4:
+                        if(fStress)
+                        {
+                            Stopwatch stopWatch = Stopwatch.StartNew();
+
+                            Transaction t = new Transaction { nodeId = AppConfig.Node.Id, seqNum = 0, timeStamp = DateTime.Now};
+
+                            int i=0;
+                            for(; i<10000; i++)
+                                SendTransaction();
+
+                            stopWatch.Stop();
+                            TimeSpan timespan = stopWatch.Elapsed;
+
+                            Console.WriteLine($"{i} transactions was sent successfully, elapsed time {stopWatch.ElapsedMilliseconds} ms");
+                            //Console.WriteLine(timespan.TotalMilliseconds.ToString("0.0###"));
+                            
+                        }
+                        break;
+
                 }
 
                 if(key == ConsoleKey.D3) break;
@@ -231,7 +287,7 @@ namespace PeerNode
                 byte[] data = ms.ToArray();
 
                 string tranJson = Encoding.UTF8.GetString(data, 0, data.Length);
-                Console.WriteLine($"Generated transaction: {tranJson}");
+                if(!fStress) Console.WriteLine($"Generated transaction: {tranJson}");
 
                 foreach (PeerNode np in AppConfig.network)
                 {
@@ -264,7 +320,7 @@ namespace PeerNode
 
                 byte[] data = ms.ToArray();
                 string blockJson = Encoding.UTF8.GetString(data, 0, data.Length);
-                Console.WriteLine($"Created block of transactions: {PrettifyBlockOfTransactions(blockJson)}");
+                if(!fStress) Console.WriteLine($"Created block of transactions: {PrettifyBlockOfTransactions(blockJson)}");
 
                 foreach (PeerNode np in AppConfig.network)
                 {
@@ -285,7 +341,7 @@ namespace PeerNode
         /// <returns>Number of processed bytes from the buffer</returns>
         public static int ProcessMessages(EndPoint p, byte[] buffer, int size, int maxSize)
         {
-            Console.WriteLine($"Received {size} bytes from {p}");
+            if(!fStress) Console.WriteLine($"Received {size} bytes from {p}");
 
             int offset = 0;
             int msgSize = -1;
@@ -297,7 +353,7 @@ namespace PeerNode
                 }
                 else
                 {
-                    Console.WriteLine("Message {0} bytes", msgSize - offset);
+                    if(!fStress) Console.WriteLine("Message {0} bytes", msgSize - offset);
 
                     string bodyJson = Encoding.UTF8.GetString(buffer, offset + 1, msgSize - offset-1);
 
@@ -307,7 +363,7 @@ namespace PeerNode
                         {
                             case 0x01://Transaction
                                 {
-                                    Console.WriteLine("Transaction");
+                                    if(!fStress) Console.WriteLine("Transaction");
 
                                     DataContractJsonSerializer transactionSerializer = new DataContractJsonSerializer(typeof(Transaction));
 
@@ -328,26 +384,32 @@ namespace PeerNode
 
                                         receivedTransactions.Add(rt);
 
-                                        if (rt.transaction.nodeId != AppConfig.Node.Id)
+                                        if(fStress)
                                         {
-                                            //It is a new transaction so redirect it to all peers
-                                            foreach (PeerNode np in AppConfig.network)
-                                            {
-                                                if (null == np.client) continue;
-                                                if (rt.transaction.nodeId == np.Id) continue;
-
-                                                np.client.Send(new byte[] { 0x01 });
-                                                np.client.Send(buffer, offset + 1, msgSize - offset - 1);
-                                                np.client.Send(new byte[] { 0x00 });
-                                            }
+                                            if(rt.transaction.seqNum==9999)
+                                                SendTransactionBlock();
                                         }
+                                        else
+                                            if (rt.transaction.nodeId != AppConfig.Node.Id)
+                                            {
+                                                //It is a new transaction so redirect it to all peers
+                                                foreach (PeerNode np in AppConfig.network)
+                                                {
+                                                    if (null == np.client) continue;
+                                                    if (rt.transaction.nodeId == np.Id) continue;
+
+                                                    np.client.Send(new byte[] { 0x01 });
+                                                    np.client.Send(buffer, offset + 1, msgSize - offset - 1);
+                                                    np.client.Send(new byte[] { 0x00 });
+                                                }
+                                            }
                                     }
                                 }
                                 break;
 
                             case 0x02://Block
                                 {
-                                    Console.WriteLine("Block");
+                                    if(!fStress) Console.WriteLine("Block");
 
                                     DataContractJsonSerializer blockSerializer = new DataContractJsonSerializer(typeof(TransactionBlock));
 
@@ -374,7 +436,7 @@ namespace PeerNode
                                 break;
                         }
                     }
-                    Console.WriteLine(PrettifyBlockOfTransactions(bodyJson));
+                    if(!fStress) Console.WriteLine(PrettifyBlockOfTransactions(bodyJson));
                 }
 
                 offset = msgSize + 1;
