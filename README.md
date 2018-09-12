@@ -18,5 +18,7 @@ Testing your network.
       
       (3) to send transactions and blocks by timer
 
+      (4) to start a stress test ("dotnet run 10000")
+      
       (Esc) to exit.
 
